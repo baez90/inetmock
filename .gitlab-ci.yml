@@ -42,3 +42,13 @@ release:
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - goreleaser release --rm-dist
+
+docs:
+  stage: release
+  services:
+    - docker:dind
+  script:
+    - task docs
+  artifacts:
+    paths:
+      - public

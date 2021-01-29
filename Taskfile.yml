@@ -99,3 +99,7 @@ tasks:
       - test
     cmds:
       - goreleaser release
+
+  docs:
+    cmds:
+      - mdbook build -d ./../public ./docs
