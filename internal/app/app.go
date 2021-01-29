@@ -10,11 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"gitlab.com/inetmock/inetmock/internal/endpoint"
-	"gitlab.com/inetmock/inetmock/pkg/api"
 	"gitlab.com/inetmock/inetmock/pkg/audit"
 	"gitlab.com/inetmock/inetmock/pkg/audit/sink"
 	"gitlab.com/inetmock/inetmock/pkg/cert"
-	"gitlab.com/inetmock/inetmock/pkg/config"
 	"gitlab.com/inetmock/inetmock/pkg/health"
 	"gitlab.com/inetmock/inetmock/pkg/logging"
 	"gitlab.com/inetmock/inetmock/pkg/path"
@@ -41,12 +39,12 @@ const (
 )
 
 type App interface {
-	api.PluginContext
 	EventStream() audit.EventStream
-	Config() config.Config
+	Config() Config
 	Checker() health.Checker
-	EndpointManager() endpoint.EndpointManager
-	HandlerRegistry() api.HandlerRegistry
+	Logger() logging.Logger
+	EndpointManager() endpoint.Orchestrator
+	HandlerRegistry() endpoint.HandlerRegistry
 	Context() context.Context
 	RootCommand() *cobra.Command
 	MustRun()
@@ -58,7 +56,7 @@ type App interface {
 
 	// WithHandlerRegistry builds up the handler registry
 	// requires nothing
-	WithHandlerRegistry(registrations ...api.Registration) App
+	WithHandlerRegistry(registrations ...endpoint.Registration) App
 
 	// WithHealthChecker adds the health checker mechanism
 	// requires nothing
@@ -115,12 +113,12 @@ func (a *app) Logger() logging.Logger {
 	return val.(logging.Logger)
 }
 
-func (a *app) Config() config.Config {
+func (a *app) Config() Config {
 	val := a.ctx.Value(configKey)
 	if val == nil {
 		return nil
 	}
-	return val.(config.Config)
+	return val.(Config)
 }
 
 func (a *app) CertStore() cert.Store {
@@ -139,12 +137,12 @@ func (a *app) Checker() health.Checker {
 	return val.(health.Checker)
 }
 
-func (a *app) EndpointManager() endpoint.EndpointManager {
+func (a *app) EndpointManager() endpoint.Orchestrator {
 	val := a.ctx.Value(endpointManagerKey)
 	if val == nil {
 		return nil
 	}
-	return val.(endpoint.EndpointManager)
+	return val.(endpoint.Orchestrator)
 }
 
 func (a *app) Audit() audit.Emitter {
@@ -163,12 +161,12 @@ func (a *app) EventStream() audit.EventStream {
 	return val.(audit.EventStream)
 }
 
-func (a *app) HandlerRegistry() api.HandlerRegistry {
+func (a *app) HandlerRegistry() endpoint.HandlerRegistry {
 	val := a.ctx.Value(handlerRegistryKey)
 	if val == nil {
 		return nil
 	}
-	return val.(api.HandlerRegistry)
+	return val.(endpoint.HandlerRegistry)
 }
 
 func (a *app) Context() context.Context {
@@ -192,8 +190,8 @@ func (a *app) WithCommands(cmds ...*cobra.Command) App {
 
 // WithHandlerRegistry builds up the handler registry
 // requires nothing
-func (a *app) WithHandlerRegistry(registrations ...api.Registration) App {
-	registry := api.NewHandlerRegistry()
+func (a *app) WithHandlerRegistry(registrations ...endpoint.Registration) App {
+	registry := endpoint.NewHandlerRegistry()
 
 	for _, registration := range registrations {
 		if err := registration(registry); err != nil {
@@ -243,10 +241,12 @@ func (a *app) WithLogger() App {
 func (a *app) WithEndpointManager() App {
 	a.lateInitTasks = append(a.lateInitTasks, func(_ *cobra.Command, _ []string) (err error) {
 		epMgr := endpoint.NewEndpointManager(
+			a.Context(),
+			a.CertStore(),
 			a.HandlerRegistry(),
-			a.Logger().Named("EndpointManager"),
+			a.Audit(),
+			a.Logger().Named("Orchestrator"),
 			a.Checker(),
-			a,
 		)
 
 		a.ctx = context.WithValue(a.ctx, endpointManagerKey, epMgr)
@@ -261,7 +261,7 @@ func (a *app) WithCertStore() App {
 	a.lateInitTasks = append(a.lateInitTasks, func(cmd *cobra.Command, args []string) (err error) {
 		var certStore cert.Store
 		if certStore, err = cert.NewDefaultStore(
-			a.Config(),
+			a.Config().TLSConfig(),
 			a.Logger().Named("CertStore"),
 		); err != nil {
 			return
@@ -310,7 +310,7 @@ func (a *app) WithEventStream() App {
 // requires nothing
 func (a *app) WithConfig() App {
 	a.lateInitTasks = append(a.lateInitTasks, func(cmd *cobra.Command, _ []string) (err error) {
-		cfg := config.CreateConfig(cmd.Flags())
+		cfg := CreateConfig()
 		if err = cfg.ReadConfig(configFilePath); err != nil {
 			return
 		}

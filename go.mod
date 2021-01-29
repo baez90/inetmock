@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/imdario/mergo v0.3.11
 	github.com/miekg/dns v1.1.35
+	github.com/mitchellh/mapstructure v1.1.2
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/prometheus/client_golang v1.9.0
 	github.com/spf13/cobra v1.1.1

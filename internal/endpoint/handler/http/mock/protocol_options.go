@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/spf13/viper"
+	"gitlab.com/inetmock/inetmock/internal/endpoint"
 )
 
 var (
@@ -54,7 +54,7 @@ type httpOptions struct {
 	Rules []targetRule
 }
 
-func loadFromConfig(config *viper.Viper) (options httpOptions, err error) {
+func loadFromConfig(lifecycle endpoint.Lifecycle) (options httpOptions, err error) {
 	type tmpCfg struct {
 		Pattern  string
 		Response string
@@ -67,7 +67,7 @@ func loadFromConfig(config *viper.Viper) (options httpOptions, err error) {
 		Rules []tmpCfg
 	}{}
 
-	if err = config.Unmarshal(&tmpRules); err != nil {
+	if err = lifecycle.UnmarshalOptions(&tmpRules); err != nil {
 		return
 	}
 

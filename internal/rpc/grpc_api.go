@@ -42,13 +42,6 @@ func (i *inetmockAPI) StartServer() (err error) {
 	}
 	i.server = grpc.NewServer()
 
-	RegisterHandlersServer(i.server, &handlersServer{
-		registry: i.app.HandlerRegistry(),
-	})
-	RegisterEndpointsServer(i.server, &endpointsServer{
-		endpointsManager: i.app.EndpointManager(),
-	})
-
 	RegisterHealthServer(i.server, &healthServer{
 		app: i.app,
 	})
