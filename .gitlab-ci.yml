@@ -47,7 +47,9 @@ docs:
   stage: release
   image: registry.gitlab.com/inetmock/ci-image/mdbook
   only:
-    - tags
+    refs:
+      - master
+      - tags
   script:
     - mdbook build -d ./../public ./docs
   artifacts:
