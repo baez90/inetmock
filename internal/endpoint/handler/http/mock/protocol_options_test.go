@@ -139,7 +139,6 @@ func Test_loadFromConfig(t *testing.T) {
 				},
 			},
 			wantOptions: httpOptions{
-				TLS: true,
 				Rules: []targetRule{
 					{
 						pattern: regexp.MustCompile("^application/octet-stream$"),

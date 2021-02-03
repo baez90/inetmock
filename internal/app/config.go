@@ -39,15 +39,13 @@ type Config interface {
 	ReadConfigString(config, format string) error
 	TLSConfig() cert.CertOptions
 	APIConfig() RPC
-	MetaSpecs() map[string]endpoint.MetaSpec
-	ListenerSpecs() map[endpoint.ListenerReference]endpoint.ListenerSpec
+	ListenerSpecs() map[string]endpoint.ListenerSpec
 }
 
 type config struct {
 	cfg       *viper.Viper
 	TLS       cert.CertOptions
-	Listeners map[endpoint.ListenerReference]endpoint.ListenerSpec
-	Endpoints map[string]endpoint.MetaSpec
+	Listeners map[string]endpoint.ListenerSpec
 	API       RPC
 }
 
@@ -65,11 +63,7 @@ func (c *config) ReadConfigString(config, format string) (err error) {
 	return
 }
 
-func (c config) MetaSpecs() map[string]endpoint.MetaSpec {
-	return c.Endpoints
-}
-
-func (c config) ListenerSpecs() map[endpoint.ListenerReference]endpoint.ListenerSpec {
+func (c config) ListenerSpecs() map[string]endpoint.ListenerSpec {
 	return c.Listeners
 }
 

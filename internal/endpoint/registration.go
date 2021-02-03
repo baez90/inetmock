@@ -3,11 +3,6 @@ package endpoint
 
 import (
 	"fmt"
-	"regexp"
-)
-
-var (
-	pluginFileNamePattern = regexp.MustCompile(`[\w\-]+\.so$`)
 )
 
 type Registration func(registry HandlerRegistry) error

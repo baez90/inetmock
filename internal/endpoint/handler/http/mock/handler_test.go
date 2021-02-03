@@ -135,6 +135,7 @@ func setupHandler(b *testing.B, uplink endpoint.Uplink) (cancel context.CancelFu
 		nil,
 		eventStream,
 		uplink,
+		false,
 		opts,
 	)
 

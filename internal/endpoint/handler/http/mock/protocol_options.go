@@ -50,7 +50,6 @@ func (tr targetRule) Response() string {
 }
 
 type httpOptions struct {
-	TLS   bool
 	Rules []targetRule
 }
 
@@ -63,15 +62,12 @@ func loadFromConfig(lifecycle endpoint.Lifecycle) (options httpOptions, err erro
 	}
 
 	tmpRules := struct {
-		TLS   bool
 		Rules []tmpCfg
 	}{}
 
 	if err = lifecycle.UnmarshalOptions(&tmpRules); err != nil {
 		return
 	}
-
-	options.TLS = tmpRules.TLS
 
 	for _, i := range tmpRules.Rules {
 		var rulePattern *regexp.Regexp

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/soheilhy/cmux"
 	"gitlab.com/inetmock/inetmock/pkg/audit"
 	"gitlab.com/inetmock/inetmock/pkg/cert"
 	"gitlab.com/inetmock/inetmock/pkg/health"
@@ -28,126 +29,120 @@ type Endpoint struct {
 }
 
 type Orchestrator interface {
-	RegisteredEndpoints() []string
-	StartedEndpoints() []Endpoint
-	RegisterEndpoint(name string, multiHandlerConfig MetaSpec) error
-	RegisterListener(ref ListenerReference, spec ListenerSpec) error
-	StartEndpoints()
+	RegisterListener(spec ListenerSpec) error
+	StartEndpoints() (errChan chan error)
 	ShutdownEndpoints()
 }
 
-func NewEndpointManager(appCtx context.Context, certStore cert.Store, registry HandlerRegistry, emitter audit.Emitter, logging logging.Logger, checker health.Checker) Orchestrator {
-	return &endpointManager{
+func NewOrchestrator(appCtx context.Context, certStore cert.Store, registry HandlerRegistry, emitter audit.Emitter, logging logging.Logger, checker health.Checker) Orchestrator {
+	return &orchestrator{
 		appCtx:                   appCtx,
 		registry:                 registry,
 		logger:                   logging,
 		certStore:                certStore,
 		emitter:                  emitter,
 		checker:                  checker,
-		listeners:                make(map[ListenerReference]Uplink),
-		registeredSpecs:          make(map[string]Spec),
 		properlyStartedEndpoints: make(map[string]Endpoint),
 	}
 }
 
-type endpointManager struct {
-	appCtx                   context.Context
-	registry                 HandlerRegistry
-	logger                   logging.Logger
-	certStore                cert.Store
-	emitter                  audit.Emitter
-	checker                  health.Checker
-	listeners                map[ListenerReference]Uplink
-	registeredSpecs          map[string]Spec
+type orchestrator struct {
+	appCtx    context.Context
+	registry  HandlerRegistry
+	logger    logging.Logger
+	certStore cert.Store
+	emitter   audit.Emitter
+	checker   health.Checker
+
+	endpointListeners        []endpointListener
 	properlyStartedEndpoints map[string]Endpoint
+	muxes                    []cmux.CMux
 }
 
-func (e endpointManager) RegisteredEndpoints() (eps []string) {
-	for n := range e.registeredSpecs {
-		eps = append(eps, n)
+type endpointListener struct {
+	name   string
+	uplink Uplink
+	spec   Spec
+}
+
+func (e *orchestrator) RegisterListener(spec ListenerSpec) (err error) {
+	for name, s := range spec.Endpoints {
+		if handler, registered := e.registry.HandlerForName(s.HandlerRef); registered {
+			s.Handler = handler
+			spec.Endpoints[name] = s
+		}
 	}
-	return
-}
 
-func (e endpointManager) StartedEndpoints() (eps []Endpoint) {
-	for _, ep := range e.properlyStartedEndpoints {
-		eps = append(eps, ep)
-	}
-	return
-}
-
-func (e *endpointManager) RegisterListener(ref ListenerReference, spec ListenerSpec) (err error) {
-	var uplink Uplink
-	if uplink, err = spec.Uplink(); err != nil {
+	var epListeners []endpointListener
+	var muxes []cmux.CMux
+	if epListeners, muxes, err = endpointListenersFromSpec(spec, e.certStore.TLSConfig()); err != nil {
 		return
 	}
-	e.listeners[ref] = uplink
+
+	e.endpointListeners = append(e.endpointListeners, epListeners...)
+	e.muxes = append(e.muxes, muxes...)
+
 	return
 }
 
-func (e *endpointManager) RegisterEndpoint(name string, endpointConfig MetaSpec) error {
-	for _, spec := range endpointConfig.EndpointSpecs() {
-		if handler, ok := e.registry.HandlerForName(endpointConfig.Handler); ok {
-			spec.Handler = handler
-		} else {
-			return fmt.Errorf("no matching handler registered for names %s", endpointConfig.Handler)
-		}
-		if _, ok := e.listeners[spec.ListenerRef]; !ok {
-			return fmt.Errorf("no matching uplink registered for reference %s", spec.ListenerRef)
-		}
-		e.registeredSpecs[fmt.Sprintf("%s_%s", name, spec.ListenerRef)] = spec
-	}
-
-	return nil
-}
-
-func (e *endpointManager) StartEndpoints() {
-	startTime := time.Now()
-	for name, spec := range e.registeredSpecs {
+func (e *orchestrator) StartEndpoints() (errChan chan error) {
+	errChan = make(chan error)
+	for _, epListener := range e.endpointListeners {
 		endpointLogger := e.logger.With(
-			zap.String("spec", name),
+			zap.String("epListener", epListener.name),
 		)
-		endpointLogger.Info("Starting spec")
+		endpointLogger.Info("Starting epListener")
 		epCtx, cancel := context.WithCancel(e.appCtx)
 		lifecycle := NewEndpointLifecycleFromContext(
-			name,
+			epListener.name,
 			epCtx,
-			e.logger.With(zap.String("spec", name)),
+			e.logger.With(zap.String("epListener", epListener.name)),
 			e.certStore,
 			e.emitter,
-			e.listeners[spec.ListenerRef],
-			spec.Options,
+			epListener.uplink,
+			epListener.spec.TLS,
+			epListener.spec.Options,
 		)
 
 		ep := Endpoint{
 			lifecycle: lifecycle,
 			cancel:    cancel,
-			Name:      name,
+			Name:      epListener.name,
 		}
 
-		if err := startEndpoint(spec, lifecycle, endpointLogger); err == nil {
+		if err := startEndpoint(epListener.spec, lifecycle, endpointLogger); err == nil {
 			_ = e.checker.RegisterCheck(
 				endpointComponentName(ep),
 				health.StaticResultCheckWithMessage(health.HEALTHY, "Successfully started"),
 			)
-			e.properlyStartedEndpoints[name] = ep
-			endpointLogger.Info("successfully started spec")
+			e.properlyStartedEndpoints[epListener.name] = ep
+			endpointLogger.Info("successfully started epListener")
 		} else {
 			_ = e.checker.RegisterCheck(
 				endpointComponentName(ep),
 				health.StaticResultCheckWithMessage(health.UNHEALTHY, "failed to start"),
 			)
-			endpointLogger.Error("error occurred during spec startup - will be skipped for now")
+			endpointLogger.Error("error occurred during epListener startup - will be skipped for now")
 		}
 	}
-	endpointStartupDuration := time.Since(startTime)
-	e.logger.Info(
-		"Startup of all endpoints completed",
-		zap.Duration("startupTime", endpointStartupDuration),
-	)
+	e.logger.Info("Startup of all endpoints completed")
+
+	for _, mux := range e.muxes {
+		go func(mux cmux.CMux) {
+			mux.HandleError(func(err error) bool {
+				errChan <- err
+				return true
+			})
+			if err := mux.Serve(); err != nil && !errors.Is(err, cmux.ErrListenerClosed) {
+				errChan <- err
+			}
+		}(mux)
+	}
+
+	return
 }
 
-func (e *endpointManager) ShutdownEndpoints() {
+func (e *orchestrator) ShutdownEndpoints() {
 	for name, endpoint := range e.properlyStartedEndpoints {
 		e.logger.Info("Triggering shutdown of endpoint", zap.String("endpoint", name))
 		endpoint.cancel()

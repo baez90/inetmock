@@ -5,6 +5,7 @@ package endpoint
 import (
 	"context"
 
+	"github.com/soheilhy/cmux"
 	"gitlab.com/inetmock/inetmock/pkg/audit"
 	"gitlab.com/inetmock/inetmock/pkg/cert"
 	"gitlab.com/inetmock/inetmock/pkg/logging"
@@ -17,9 +18,15 @@ type Lifecycle interface {
 	Audit() audit.Emitter
 	Context() context.Context
 	Uplink() Uplink
+	TLS() bool
 	UnmarshalOptions(cfg interface{}) error
 }
 
 type ProtocolHandler interface {
 	Start(ctx Lifecycle) error
+}
+
+type MultiplexHandler interface {
+	ProtocolHandler
+	Matchers() []cmux.Matcher
 }

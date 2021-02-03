@@ -22,25 +22,17 @@ func startINetMock(_ *cobra.Command, _ []string) (err error) {
 	cfg := serverApp.Config()
 	endpointOrchestrator := serverApp.EndpointManager()
 
-	for ref, spec := range cfg.ListenerSpecs() {
-		if err = endpointOrchestrator.RegisterListener(ref, spec); err != nil {
+	for name, spec := range cfg.ListenerSpecs() {
+		if spec.Name == "" {
+			spec.Name = name
+		}
+		if err = endpointOrchestrator.RegisterListener(spec); err != nil {
 			logger.Error("Failed to register listener", zap.Error(err))
 			return
 		}
 	}
 
-	for endpointName, endpointHandler := range cfg.MetaSpecs() {
-		if err := endpointOrchestrator.RegisterEndpoint(endpointName, endpointHandler); err != nil {
-			logger.Warn(
-				"error occurred while creating endpoint",
-				zap.String("endpointName", endpointName),
-				zap.String("handlerName", string(endpointHandler.Handler)),
-				zap.Error(err),
-			)
-		}
-	}
-
-	serverApp.EndpointManager().StartEndpoints()
+	errChan := serverApp.EndpointManager().StartEndpoints()
 	if err = rpcAPI.StartServer(); err != nil {
 		serverApp.Shutdown()
 		logger.Error(
@@ -49,7 +41,15 @@ func startINetMock(_ *cobra.Command, _ []string) (err error) {
 		)
 	}
 
-	<-serverApp.Context().Done()
+loop:
+	for {
+		select {
+		case err := <-errChan:
+			logger.Error("got error from endpoint", zap.Error(err))
+		case <-serverApp.Context().Done():
+			break loop
+		}
+	}
 
 	logger.Info("App context canceled - shutting down")
 

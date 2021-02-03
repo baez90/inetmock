@@ -1,3 +1,5 @@
+//go:generate go-enum -f $GOFILE --lower --marshal --names
+
 package endpoint
 
 import (
@@ -8,7 +10,15 @@ import (
 	"go.uber.org/multierr"
 )
 
+/* ENUM(
+UDP,
+TCP
+)
+*/
+type NetProto int
+
 type Uplink struct {
+	Proto      NetProto
 	Listener   net.Listener
 	PacketConn net.PacketConn
 }
@@ -34,20 +44,23 @@ func (u Uplink) Close() (err error) {
 }
 
 type ListenerSpec struct {
-	Name     string
-	Protocol string
-	Address  string `mapstructure:"listenAddress"`
-	Port     uint16
+	Name      string
+	Protocol  string
+	Address   string `mapstructure:"listenAddress"`
+	Port      uint16
+	Endpoints map[string]Spec
 }
 
 func (l ListenerSpec) Uplink() (uplink Uplink, err error) {
 	switch l.Protocol {
 	case "udp", "udp4", "udp6":
+		uplink.Proto = NetProtoUDP
 		uplink.PacketConn, err = net.ListenUDP(l.Protocol, &net.UDPAddr{
 			IP:   net.ParseIP(l.Address),
 			Port: int(l.Port),
 		})
 	case "tcp", "tcp4", "tcp6":
+		uplink.Proto = NetProtoTCP
 		uplink.Listener, err = net.ListenTCP(l.Protocol, &net.TCPAddr{
 			IP:   net.ParseIP(l.Address),
 			Port: int(l.Port),
@@ -58,8 +71,6 @@ func (l ListenerSpec) Uplink() (uplink Uplink, err error) {
 	return
 }
 
-type ListenerReference string
-
 type HandlerReference string
 
 func (h HandlerReference) ToLower() HandlerReference {
@@ -67,25 +78,8 @@ func (h HandlerReference) ToLower() HandlerReference {
 }
 
 type Spec struct {
-	HandlerRef  HandlerReference
-	Handler     ProtocolHandler
-	ListenerRef ListenerReference
-	Options     map[string]interface{}
-}
-
-type MetaSpec struct {
-	Handler   HandlerReference
-	Listeners []ListenerReference
-	Options   map[string]interface{}
-}
-
-func (m MetaSpec) EndpointSpecs() (configs []Spec) {
-	for _, lis := range m.Listeners {
-		configs = append(configs, Spec{
-			HandlerRef:  m.Handler,
-			ListenerRef: lis,
-			Options:     m.Options,
-		})
-	}
-	return
+	HandlerRef HandlerReference `mapstructure:"handler"`
+	TLS        bool
+	Handler    ProtocolHandler `mapstructure:"-"`
+	Options    map[string]interface{}
 }

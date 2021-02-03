@@ -16,7 +16,6 @@ import (
 	"gitlab.com/inetmock/inetmock/pkg/health"
 	"gitlab.com/inetmock/inetmock/pkg/logging"
 	"gitlab.com/inetmock/inetmock/pkg/path"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -240,7 +239,7 @@ func (a *app) WithLogger() App {
 // requires WithHandlerRegistry, WithHealthChecker and WithLogger
 func (a *app) WithEndpointManager() App {
 	a.lateInitTasks = append(a.lateInitTasks, func(_ *cobra.Command, _ []string) (err error) {
-		epMgr := endpoint.NewEndpointManager(
+		epMgr := endpoint.NewOrchestrator(
 			a.Context(),
 			a.CertStore(),
 			a.HandlerRegistry(),
@@ -343,7 +342,9 @@ func NewApp(name, short string) App {
 
 	a.rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) (err error) {
 		for _, initTask := range a.lateInitTasks {
-			err = multierr.Append(err, initTask(cmd, args))
+			if err = initTask(cmd, args); err != nil {
+				return
+			}
 		}
 		return
 	}
