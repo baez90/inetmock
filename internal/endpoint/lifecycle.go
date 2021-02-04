@@ -27,7 +27,6 @@ func NewEndpointLifecycleFromContext(
 	certStore cert.Store,
 	emitter audit.Emitter,
 	uplink Uplink,
-	tls bool,
 	opts map[string]interface{},
 ) Lifecycle {
 	return &endpointLifecycle{
@@ -37,7 +36,6 @@ func NewEndpointLifecycleFromContext(
 		certStore:    certStore,
 		emitter:      emitter,
 		uplink:       uplink,
-		tls:          tls,
 		opts:         opts,
 	}
 }
@@ -64,10 +62,6 @@ func (e endpointLifecycle) Audit() audit.Emitter {
 
 func (e endpointLifecycle) Context() context.Context {
 	return e.ctx
-}
-
-func (e endpointLifecycle) TLS() bool {
-	return e.tls
 }
 
 func (e endpointLifecycle) UnmarshalOptions(cfg interface{}) error {

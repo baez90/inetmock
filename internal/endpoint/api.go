@@ -18,7 +18,6 @@ type Lifecycle interface {
 	Audit() audit.Emitter
 	Context() context.Context
 	Uplink() Uplink
-	TLS() bool
 	UnmarshalOptions(cfg interface{}) error
 }
 

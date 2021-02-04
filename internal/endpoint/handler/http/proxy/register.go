@@ -11,8 +11,6 @@ import (
 
 var (
 	handlerNameLblName       = "handler_name"
-	totalRequestCounter      *prometheus.CounterVec
-	totalHttpsRequestCounter *prometheus.CounterVec
 	requestDurationHistogram *prometheus.HistogramVec
 )
 
@@ -25,15 +23,7 @@ func AddHTTPProxy(registry endpoint.HandlerRegistry) (err error) {
 		zap.String("protocol_handler", name),
 	)
 
-	if totalRequestCounter, err = metrics.Counter(name, "total_requests", "", handlerNameLblName); err != nil {
-		return
-	}
-
 	if requestDurationHistogram, err = metrics.Histogram(name, "request_duration", "", nil, handlerNameLblName); err != nil {
-		return
-	}
-
-	if totalHttpsRequestCounter, err = metrics.Counter(name, "total_https_requests", "", handlerNameLblName); err != nil {
 		return
 	}
 

@@ -78,7 +78,7 @@ listeners:
     name: ''
     protocol: udp
     listenAddress: ''
-    port: 1053
+    port: 53
     endpoints:
       plainDns:
         handler: dns_mock
@@ -129,12 +129,19 @@ listeners:
     listenAddress: ''
     port: 3128
     endpoints:
-      proxy:
+      proxyPlain:
         handler: http_proxy
         options:
           target:
             ipAddress: 127.0.0.1
             port: 80
+      proxyTls:
+        handler: http_proxy
+        tls: true
+        options:
+          target:
+            ipAddress: 127.0.0.1
+            port: 443
   tcp_8080:
     name: ''
     protocol: tcp

@@ -13,6 +13,23 @@ import (
 	"gopkg.in/elazarl/goproxy.v1"
 )
 
+type proxyHttpsHandler struct {
+	options   httpProxyOptions
+	tlsConfig *tls.Config
+	emitter   audit.Emitter
+}
+
+func (p *proxyHttpsHandler) HandleConnect(_ string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+	p.emitter.Emit(imHttp.EventFromRequest(ctx.Req, audit.AppProtocol_HTTP_PROXY))
+
+	return &goproxy.ConnectAction{
+		Action: goproxy.ConnectAccept,
+		TLSConfig: func(host string, ctx *goproxy.ProxyCtx) (*tls.Config, error) {
+			return p.tlsConfig, nil
+		},
+	}, p.options.Target.host()
+}
+
 type proxyHttpHandler struct {
 	handlerName string
 	options     httpProxyOptions
@@ -20,38 +37,15 @@ type proxyHttpHandler struct {
 	emitter     audit.Emitter
 }
 
-type proxyHttpsHandler struct {
-	handlerName string
-	tlsConfig   *tls.Config
-	logger      logging.Logger
-	emitter     audit.Emitter
-}
-
-func (p *proxyHttpsHandler) HandleConnect(req string, _ *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-	totalHttpsRequestCounter.WithLabelValues(p.handlerName).Inc()
-	p.logger.Info(
-		"Intercepting HTTPS proxy request",
-		zap.String("request", req),
-	)
-
-	return &goproxy.ConnectAction{
-		Action: goproxy.ConnectMitm,
-		TLSConfig: func(host string, ctx *goproxy.ProxyCtx) (*tls.Config, error) {
-			return p.tlsConfig, nil
-		},
-	}, ""
-}
-
 func (p *proxyHttpHandler) Handle(req *http.Request, ctx *goproxy.ProxyCtx) (retReq *http.Request, resp *http.Response) {
 	timer := prometheus.NewTimer(requestDurationHistogram.WithLabelValues(p.handlerName))
 	defer timer.ObserveDuration()
-	totalRequestCounter.WithLabelValues(p.handlerName).Inc()
 
 	retReq = req
 	p.emitter.Emit(imHttp.EventFromRequest(req, audit.AppProtocol_HTTP_PROXY))
 
 	var err error
-	if resp, err = ctx.RoundTrip(p.redirectHTTPRequest(req)); err != nil {
+	if resp, err = ctx.RoundTrip(redirectHTTPRequest(p.options.Target.host(), req)); err != nil {
 		p.logger.Error(
 			"error while doing roundtrip",
 			zap.Error(err),
@@ -62,11 +56,11 @@ func (p *proxyHttpHandler) Handle(req *http.Request, ctx *goproxy.ProxyCtx) (ret
 	return
 }
 
-func (p proxyHttpHandler) redirectHTTPRequest(originalRequest *http.Request) (redirectReq *http.Request) {
+func redirectHTTPRequest(targetHost string, originalRequest *http.Request) (redirectReq *http.Request) {
 	redirectReq = &http.Request{
 		Method: originalRequest.Method,
 		URL: &url.URL{
-			Host:       p.options.Target.host(),
+			Host:       targetHost,
 			Path:       originalRequest.URL.Path,
 			ForceQuery: originalRequest.URL.ForceQuery,
 			Fragment:   originalRequest.URL.Fragment,

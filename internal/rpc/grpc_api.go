@@ -3,6 +3,7 @@ package rpc
 import (
 	"net"
 	"net/url"
+	"os"
 	"time"
 
 	app2 "gitlab.com/inetmock/inetmock/internal/app"
@@ -91,6 +92,11 @@ func (i *inetmockAPI) startServerAsync(listener net.Listener) {
 func createListenerFromURL(url *url.URL) (lis net.Listener, err error) {
 	switch url.Scheme {
 	case "unix":
+		if _, err = os.Stat(url.Path); err == nil {
+			if err = os.Remove(url.Path); err != nil {
+				return
+			}
+		}
 		lis, err = net.Listen(url.Scheme, url.Path)
 	default:
 		lis, err = net.Listen(url.Scheme, url.Host)

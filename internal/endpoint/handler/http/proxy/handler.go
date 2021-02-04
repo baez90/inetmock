@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/soheilhy/cmux"
 	"gitlab.com/inetmock/inetmock/internal/endpoint"
 	imHttp "gitlab.com/inetmock/inetmock/internal/endpoint/handler/http"
 	"gitlab.com/inetmock/inetmock/pkg/logging"
@@ -21,6 +22,10 @@ type httpProxy struct {
 	logger logging.Logger
 	proxy  *goproxy.ProxyHttpServer
 	server *http.Server
+}
+
+func (h *httpProxy) Matchers() []cmux.Matcher {
+	return []cmux.Matcher{cmux.HTTP1()}
 }
 
 func (h *httpProxy) Start(lifecycle endpoint.Lifecycle) (err error) {
@@ -48,10 +53,9 @@ func (h *httpProxy) Start(lifecycle endpoint.Lifecycle) (err error) {
 	}
 
 	proxyHTTPSHandler := &proxyHttpsHandler{
-		handlerName: lifecycle.Name(),
-		tlsConfig:   tlsConfig,
-		logger:      h.logger,
-		emitter:     lifecycle.Audit(),
+		options:   opts,
+		tlsConfig: tlsConfig,
+		emitter:   lifecycle.Audit(),
 	}
 
 	h.proxy.OnRequest().Do(proxyHandler)

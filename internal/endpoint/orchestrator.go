@@ -100,7 +100,6 @@ func (e *orchestrator) StartEndpoints() (errChan chan error) {
 			e.certStore,
 			e.emitter,
 			epListener.uplink,
-			epListener.spec.TLS,
 			epListener.spec.Options,
 		)
 
