@@ -6,6 +6,8 @@ vars:
   IMCTL_PKG: gitlab.com/inetmock/inetmock/cmd/imctl
   PROTO_FILES:
     sh: find ./api/ -type f -name "*.proto" -printf "%p "
+  BENCHMARKS:
+    sh: find . -type f -name "*_bench_test.go"
 
 env:
   GOOS: linux
@@ -57,7 +59,10 @@ tasks:
     deps:
       - generate
     cmds:
-      - go test -bench=.
+      - |
+        {{ range .BENCHMARKS | splitLines -}}
+        go test -bench=. {{ . }}
+        {{ end }}
 
   cli-cover-report:
     deps:

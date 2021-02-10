@@ -14,6 +14,13 @@ test:
       junit: out/report.xml
       cobertura: out/coverage.xml
 
+integration-test:
+  stage: test
+  services:
+    - docker:dind
+  script:
+    - task integration-test
+
 lint:
   stage: test
   script:

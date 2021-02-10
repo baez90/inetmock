@@ -22,9 +22,12 @@ import (
 	"gitlab.com/inetmock/inetmock/internal/test/integration"
 )
 
+const (
+	charSet = "abcdedfghijklmnopqrstABCDEFGHIJKLMNOP"
+)
+
 var (
 	availableExtensions = []string{"gif", "html", "ico", "jpg", "png", "txt"}
-	charSet             = "abcdedfghijklmnopqrstABCDEFGHIJKLMNOP"
 )
 
 func init() {
@@ -64,23 +67,25 @@ func Benchmark_httpHandler(b *testing.B) {
 
 			b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
-				extension := availableExtensions[rand.Intn(len(availableExtensions))]
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					extension := availableExtensions[rand.Intn(len(availableExtensions))]
 
-				reqUrl, _ := url.Parse(fmt.Sprintf("%s/%s.%s", endpoint, randomString(15), extension))
+					reqUrl, _ := url.Parse(fmt.Sprintf("%s/%s.%s", endpoint, randomString(15), extension))
 
-				req := &http.Request{
-					Method: http.MethodGet,
-					URL:    reqUrl,
-					Close:  false,
-					Host:   "www.inetmock.com",
+					req := &http.Request{
+						Method: http.MethodGet,
+						URL:    reqUrl,
+						Close:  false,
+						Host:   "www.inetmock.com",
+					}
+					if resp, err := httpClient.Do(req); err != nil {
+						b.Error(err)
+					} else if resp.StatusCode != 200 {
+						b.Errorf("Got status code %d", resp.StatusCode)
+					}
 				}
-				if resp, err := httpClient.Do(req); err != nil {
-					b.Error(err)
-				} else if resp.StatusCode != 200 {
-					b.Errorf("Got status code %d", resp.StatusCode)
-				}
-			}
+			})
 		}
 	}
 	for _, bm := range benchmarks {
