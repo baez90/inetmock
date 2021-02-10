@@ -4,9 +4,11 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -19,13 +21,19 @@ func SetupINetMockContainer(ctx context.Context, tb testing.TB, exposedPorts ...
 		return
 	}
 
-	var plainHttpPresent = false
+	var waitStrategies []wait.Strategy
+
+	var tcpPortPresent = false
 	for _, port := range exposedPorts {
-		plainHttpPresent = plainHttpPresent || port == "80/tcp"
+		if strings.Contains(port, "tcp") {
+			tcpPortPresent = true
+			waitStrategies = append(waitStrategies, wait.ForListeningPort(nat.Port(port)))
+		}
 	}
 
-	if !plainHttpPresent {
+	if !tcpPortPresent {
 		exposedPorts = append(exposedPorts, "80/tcp")
+		waitStrategies = append(waitStrategies, wait.ForListeningPort("80/tcp"))
 	}
 
 	req := testcontainers.ContainerRequest{
@@ -34,7 +42,7 @@ func SetupINetMockContainer(ctx context.Context, tb testing.TB, exposedPorts ...
 			Dockerfile: filepath.Join("./", "testdata", "integration.dockerfile"),
 		},
 		ExposedPorts: exposedPorts,
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		WaitingFor:   wait.ForAll(waitStrategies...),
 	}
 
 	imContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

@@ -78,7 +78,7 @@ listeners:
     name: ''
     protocol: udp
     listenAddress: ''
-    port: 53
+    port: 1053
     endpoints:
       plainDns:
         handler: dns_mock

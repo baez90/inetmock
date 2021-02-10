@@ -3,8 +3,8 @@ package proxy
 import (
 	"crypto/tls"
 	"net/http"
-	"net/url"
 
+	"github.com/jinzhu/copier"
 	"github.com/prometheus/client_golang/prometheus"
 	imHttp "gitlab.com/inetmock/inetmock/internal/endpoint/handler/http"
 	"gitlab.com/inetmock/inetmock/pkg/audit"
@@ -45,7 +45,11 @@ func (p *proxyHttpHandler) Handle(req *http.Request, ctx *goproxy.ProxyCtx) (ret
 	p.emitter.Emit(imHttp.EventFromRequest(req, audit.AppProtocol_HTTP_PROXY))
 
 	var err error
-	if resp, err = ctx.RoundTrip(redirectHTTPRequest(p.options.Target.host(), req)); err != nil {
+	var redirectReq *http.Request
+	if redirectReq, err = redirectHTTPRequest(p.options.Target.host(), req); err != nil {
+		return req, nil
+	}
+	if resp, err = ctx.RoundTrip(redirectReq); err != nil {
 		p.logger.Error(
 			"error while doing roundtrip",
 			zap.Error(err),
@@ -56,35 +60,11 @@ func (p *proxyHttpHandler) Handle(req *http.Request, ctx *goproxy.ProxyCtx) (ret
 	return
 }
 
-func redirectHTTPRequest(targetHost string, originalRequest *http.Request) (redirectReq *http.Request) {
-	redirectReq = &http.Request{
-		Method: originalRequest.Method,
-		URL: &url.URL{
-			Host:       targetHost,
-			Path:       originalRequest.URL.Path,
-			ForceQuery: originalRequest.URL.ForceQuery,
-			Fragment:   originalRequest.URL.Fragment,
-			Opaque:     originalRequest.URL.Opaque,
-			RawPath:    originalRequest.URL.RawPath,
-			RawQuery:   originalRequest.URL.RawQuery,
-			User:       originalRequest.URL.User,
-		},
-		Proto:            originalRequest.Proto,
-		ProtoMajor:       originalRequest.ProtoMajor,
-		ProtoMinor:       originalRequest.ProtoMinor,
-		Header:           originalRequest.Header,
-		Body:             originalRequest.Body,
-		GetBody:          originalRequest.GetBody,
-		ContentLength:    originalRequest.ContentLength,
-		TransferEncoding: originalRequest.TransferEncoding,
-		Close:            false,
-		Host:             originalRequest.Host,
-		Form:             originalRequest.Form,
-		PostForm:         originalRequest.PostForm,
-		MultipartForm:    originalRequest.MultipartForm,
-		Trailer:          originalRequest.Trailer,
+func redirectHTTPRequest(targetHost string, originalRequest *http.Request) (redirectReq *http.Request, err error) {
+	redirectReq = new(http.Request)
+	if err = copier.Copy(redirectReq, originalRequest); err != nil {
+		return
 	}
-	redirectReq = redirectReq.WithContext(originalRequest.Context())
-
+	originalRequest.URL.Host = targetHost
 	return
 }

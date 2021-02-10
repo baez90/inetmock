@@ -54,6 +54,5 @@ loop:
 	logger.Info("App context canceled - shutting down")
 
 	rpcAPI.StopServer()
-	serverApp.EndpointManager().ShutdownEndpoints()
 	return
 }

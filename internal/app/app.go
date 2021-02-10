@@ -245,7 +245,6 @@ func (a *app) WithEndpointManager() App {
 			a.HandlerRegistry(),
 			a.Audit(),
 			a.Logger().Named("Orchestrator"),
-			a.Checker(),
 		)
 
 		a.ctx = context.WithValue(a.ctx, endpointManagerKey, epMgr)

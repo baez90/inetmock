@@ -9,6 +9,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.2.0
 	github.com/imdario/mergo v0.3.11
+	github.com/jinzhu/copier v0.2.4
 	github.com/miekg/dns v1.1.38
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/olekukonko/tablewriter v0.0.5
