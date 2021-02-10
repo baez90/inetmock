@@ -51,7 +51,7 @@ release:
     - goreleaser release --rm-dist
 
 docs:
-  stage: release
+  stage: deploy
   image: registry.gitlab.com/inetmock/ci-image/mdbook
   only:
     refs:
