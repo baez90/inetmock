@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+
 	"gitlab.com/inetmock/inetmock/internal/app"
 	"gitlab.com/inetmock/inetmock/internal/endpoint"
 	dns "gitlab.com/inetmock/inetmock/internal/endpoint/handler/dns/mock"

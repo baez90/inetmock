@@ -180,10 +180,9 @@ func (s Spec) readConfig(rootCmd *cobra.Command) error {
 	if configFilePath != "" && path.FileExists(configFilePath) {
 		viperCfg.SetConfigFile(configFilePath)
 	}
+
 	if err := viperCfg.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok && s.IgnoreMissingConfigFile {
-			err = nil
-		} else {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !(ok && s.IgnoreMissingConfigFile) {
 			return err
 		}
 	}

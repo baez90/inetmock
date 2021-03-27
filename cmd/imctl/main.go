@@ -27,7 +27,6 @@ type config struct {
 	GRPCTimeout time.Duration
 }
 
-//nolint:lll
 func main() {
 	healthCmd.AddCommand(generalHealthCmd, containerHealthCmd)
 	cliApp = app.NewApp(

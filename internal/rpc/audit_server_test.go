@@ -7,14 +7,16 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/maxatome/go-testdeep/td"
-	audit_mock "gitlab.com/inetmock/inetmock/internal/mock/audit"
+
+	"google.golang.org/grpc"
+
+	auditm "gitlab.com/inetmock/inetmock/internal/mock/audit"
 	"gitlab.com/inetmock/inetmock/internal/rpc"
 	"gitlab.com/inetmock/inetmock/internal/rpc/test"
 	tst "gitlab.com/inetmock/inetmock/internal/test"
 	"gitlab.com/inetmock/inetmock/pkg/audit"
 	"gitlab.com/inetmock/inetmock/pkg/logging"
 	v1 "gitlab.com/inetmock/inetmock/pkg/rpc/v1"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -41,7 +43,7 @@ func Test_auditServer_RemoveFileSink(t *testing.T) {
 				eventStreamSetup: func(t *testing.T) audit.EventStream {
 					ctrl := gomock.NewController(t)
 
-					es := audit_mock.NewMockEventStream(ctrl)
+					es := auditm.NewMockEventStream(ctrl)
 					es.
 						EXPECT().
 						RemoveSink("test.pcap").
@@ -64,7 +66,7 @@ func Test_auditServer_RemoveFileSink(t *testing.T) {
 				eventStreamSetup: func(t *testing.T) audit.EventStream {
 					ctrl := gomock.NewController(t)
 
-					es := audit_mock.NewMockEventStream(ctrl)
+					es := auditm.NewMockEventStream(ctrl)
 					es.
 						EXPECT().
 						RemoveSink("test.pcap").

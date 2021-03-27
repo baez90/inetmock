@@ -63,5 +63,4 @@ func (t *GRPCServer) startServerLifecycle(ctx context.Context, tb testing.TB) {
 	if err := t.server.Serve(t.listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 		tb.Errorf("error occurred during running the gRPC test server - error - %v", err)
 	}
-	return
 }

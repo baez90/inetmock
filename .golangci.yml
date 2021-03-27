@@ -18,6 +18,9 @@ linters-settings:
       - ifElseChain
       - octalLiteral
       - wrapperFunc
+    settings:
+      hugeParam:
+        sizeThreshold: 200
   gocyclo:
     min-complexity: 15
   goimports:
@@ -57,6 +60,7 @@ linters:
     - dupl
     - errcheck
     - exhaustive
+    - exportloopref
     - funlen
     - goconst
     - gocritic
@@ -73,7 +77,6 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - scopelint
     - staticcheck
     - structcheck
     - stylecheck
@@ -92,11 +95,6 @@ issues:
       linters:
         - gomnd
 
-    # https://github.com/go-critic/go-critic/issues/926
-    - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
-
 run:
   skip-dirs:
     - internal/mock
@@ -104,6 +102,4 @@ run:
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.37.x # use the fixed version to not introduce new linters unexpectedly
-  prepare:
-    - echo "here I can run custom commands, but no preparation needed for this repo"
+  golangci-lint-version: 1.39.x # use the fixed version to not introduce new linters unexpectedly
