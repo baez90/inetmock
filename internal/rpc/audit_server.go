@@ -35,7 +35,8 @@ func (a *auditServer) ListSinks(context.Context, *v1.ListSinksRequest) (*v1.List
 }
 
 func (a *auditServer) WatchEvents(req *v1.WatchEventsRequest, srv v1.AuditService_WatchEventsServer) (err error) {
-	a.logger.Info("watcher attached", zap.String("name", req.WatcherName))
+	var logger = a.logger
+	logger.Info("watcher attached", zap.String("name", req.WatcherName))
 	err = a.eventStream.RegisterSink(srv.Context(), sink.NewGenericSink(req.WatcherName, func(ev audit.Event) {
 		if err = srv.Send(&v1.WatchEventsResponse{Entity: ev.ProtoMessage()}); err != nil {
 			return
@@ -47,7 +48,7 @@ func (a *auditServer) WatchEvents(req *v1.WatchEventsRequest, srv v1.AuditServic
 	}
 
 	<-srv.Context().Done()
-	a.logger.Info("Watcher detached", zap.String("name", req.WatcherName))
+	logger.Info("Watcher detached", zap.String("name", req.WatcherName))
 	return
 }
 
