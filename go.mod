@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/imdario/mergo v0.3.12
 	github.com/jinzhu/copier v0.2.8
+	github.com/maxatome/go-testdeep v1.9.2
 	github.com/miekg/dns v1.1.41
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/olekukonko/tablewriter v0.0.5

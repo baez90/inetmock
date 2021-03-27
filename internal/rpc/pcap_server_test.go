@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -15,6 +16,7 @@ import (
 	"gitlab.com/inetmock/inetmock/internal/pcap/consumers"
 	"gitlab.com/inetmock/inetmock/internal/rpc"
 	"gitlab.com/inetmock/inetmock/internal/rpc/test"
+	tst "gitlab.com/inetmock/inetmock/internal/test"
 	rpcV1 "gitlab.com/inetmock/inetmock/pkg/rpc/v1"
 )
 
@@ -290,35 +292,15 @@ func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
 
 func setupTestPCAPServer(t *testing.T, recorder pcap.Recorder) rpcV1.PCAPServiceClient {
 	t.Helper()
-	var err error
-	var srv *test.GRPCServer
 	p := rpc.NewPCAPServer(t.TempDir(), recorder)
-	srv, err = test.NewTestGRPCServer(func(registrar grpc.ServiceRegistrar) {
+
+	srv := test.NewTestGRPCServer(t, func(registrar grpc.ServiceRegistrar) {
 		rpcV1.RegisterPCAPServiceServer(registrar, p)
 	})
 
-	if err != nil {
-		t.Fatalf("NewTestGRPCServer() error = %v", err)
-	}
-
-	if err = srv.StartServer(); err != nil {
-		t.Fatalf("StartServer() error = %v", err)
-	}
-
-	t.Cleanup(func() {
-		srv.StopServer()
-	})
-
-	var conn *grpc.ClientConn
-	if conn, err = srv.Dial(context.Background(), grpc.WithInsecure()); err != nil {
-		t.Fatalf("Dial() error = %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := conn.Close(); err != nil {
-			t.Errorf("conn.Close() error = %v", err)
-		}
-	})
+	ctx, cancel := context.WithTimeout(tst.Context(t), 100*time.Millisecond)
+	var conn = srv.Dial(ctx, t)
+	cancel()
 
 	return rpcV1.NewPCAPServiceClient(conn)
 }

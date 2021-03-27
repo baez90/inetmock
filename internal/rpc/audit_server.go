@@ -28,6 +28,14 @@ type auditServer struct {
 	auditDataDirPath string
 }
 
+func NewAuditServiceServer(logger logging.Logger, eventStream audit.EventStream, auditDataDirPath string) v1.AuditServiceServer {
+	return &auditServer{
+		logger:           logger,
+		eventStream:      eventStream,
+		auditDataDirPath: auditDataDirPath,
+	}
+}
+
 func (a *auditServer) ListSinks(context.Context, *v1.ListSinksRequest) (*v1.ListSinksResponse, error) {
 	return &v1.ListSinksResponse{
 		Sinks: a.eventStream.Sinks(),
@@ -77,7 +85,9 @@ func (a *auditServer) RegisterFileSink(_ context.Context, req *v1.RegisterFileSi
 
 func (a *auditServer) RemoveFileSink(_ context.Context, req *v1.RemoveFileSinkRequest) (*v1.RemoveFileSinkResponse, error) {
 	if gotRemoved := a.eventStream.RemoveSink(req.TargetPath); gotRemoved {
-		return &v1.RemoveFileSinkResponse{}, nil
+		return &v1.RemoveFileSinkResponse{
+			SinkGotRemoved: gotRemoved,
+		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "file sink with given target path not found")
 }
