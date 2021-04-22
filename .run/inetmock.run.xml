@@ -3,9 +3,6 @@
     <module name="inetmock" />
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="serve" />
-    <envs>
-      <env name="INETMOCK_API_LISTEN" value="unix://$USER_HOME$/tmp/inetmock.sock" />
-    </envs>
     <sudo value="true" />
     <kind value="PACKAGE" />
     <package value="gitlab.com/inetmock/inetmock/cmd/inetmock" />

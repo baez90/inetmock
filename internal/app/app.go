@@ -154,15 +154,14 @@ func initAppContext() (context.Context, context.CancelFunc) {
 }
 
 func (s Spec) readConfig(rootCmd *cobra.Command) error {
-	viperCfg := viper.New()
-
+	viperCfg := viper.NewWithOptions()
 	viperCfg.SetConfigName("config")
 	viperCfg.SetConfigType("yaml")
 	viperCfg.AddConfigPath(fmt.Sprintf("/etc/%s/", strings.ToLower(s.Name)))
 	viperCfg.AddConfigPath(fmt.Sprintf("$HOME/.%s/", strings.ToLower(s.Name)))
 	viperCfg.AddConfigPath(".")
-	viperCfg.SetEnvPrefix("INETMOCK")
 	viperCfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viperCfg.SetEnvPrefix("INETMOCK")
 	viperCfg.AutomaticEnv()
 
 	if s.FlagBindings != nil {
