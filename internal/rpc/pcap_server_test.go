@@ -21,6 +21,7 @@ import (
 )
 
 func Test_pcapServer_ListActiveRecordings(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name              string
 		recorderSetup     func(t *testing.T) (recorder pcap.Recorder, err error)
@@ -31,6 +32,7 @@ func Test_pcapServer_ListActiveRecordings(t *testing.T) {
 		{
 			name: "No subscriptions",
 			recorderSetup: func(t *testing.T) (recorder pcap.Recorder, err error) {
+				t.Helper()
 				recorder = pcap.NewRecorder()
 				return
 			},
@@ -40,6 +42,7 @@ func Test_pcapServer_ListActiveRecordings(t *testing.T) {
 		{
 			name: "Listening to lo interface",
 			recorderSetup: func(t *testing.T) (recorder pcap.Recorder, err error) {
+				t.Helper()
 				recorder = pcap.NewRecorder()
 				err = recorder.StartRecording(context.Background(), "lo", consumers.NewNoOpConsumerWithName("test"))
 				return
@@ -48,8 +51,10 @@ func Test_pcapServer_ListActiveRecordings(t *testing.T) {
 			wantErr:           false,
 		},
 	}
-	scenario := func(tt testCase) func(t *testing.T) {
-		return func(t *testing.T) {
+	for _, tc := range tests {
+		tt := tc
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var err error
 			var recorder pcap.Recorder
 			if recorder, err = tt.recorderSetup(t); err != nil {
@@ -70,24 +75,24 @@ func Test_pcapServer_ListActiveRecordings(t *testing.T) {
 				t.Errorf("ListActiveRecordings() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if (gotResp == nil) != tt.wantErr {
-				t.Errorf("response was nil")
-				return
-			} else {
-				sort.Strings(gotResp.Subscriptions)
-				sort.Strings(tt.wantSubscriptions)
-				if !reflect.DeepEqual(gotResp.Subscriptions, tt.wantSubscriptions) {
-					t.Errorf("ListActiveRecordings() gotResp = %v, want %v", gotResp.Subscriptions, tt.wantSubscriptions)
+			if gotResp == nil {
+				if !tt.wantErr {
+					t.Errorf("response was nil")
 				}
+				return
 			}
-		}
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, scenario(tt))
+
+			sort.Strings(gotResp.Subscriptions)
+			sort.Strings(tt.wantSubscriptions)
+			if !reflect.DeepEqual(gotResp.Subscriptions, tt.wantSubscriptions) {
+				t.Errorf("ListActiveRecordings() gotResp = %v, want %v", gotResp.Subscriptions, tt.wantSubscriptions)
+			}
+		})
 	}
 }
 
 func Test_pcapServer_ListAvailableDevices(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name    string
 		matcher func(devs []*rpcV1.ListAvailableDevicesResponse_PCAPDevice) error
@@ -137,8 +142,10 @@ func Test_pcapServer_ListAvailableDevices(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	scenario := func(tt testCase) func(t *testing.T) {
-		return func(t *testing.T) {
+	for _, tc := range tests {
+		tt := tc
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var err error
 			var recorder = pcap.NewRecorder()
 
@@ -159,14 +166,12 @@ func Test_pcapServer_ListAvailableDevices(t *testing.T) {
 					t.Errorf("ListAvailableDevices() matcher error = %v", err)
 				}
 			}
-		}
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, scenario(tt))
+		})
 	}
 }
 
 func Test_pcapServer_StartPCAPFileRecording(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name              string
 		req               *rpcV1.StartPCAPFileRecordingRequest
@@ -198,8 +203,10 @@ func Test_pcapServer_StartPCAPFileRecording(t *testing.T) {
 			wantErr:           true,
 		},
 	}
-	scenario := func(tt testCase) func(t *testing.T) {
-		return func(t *testing.T) {
+	for _, tc := range tests {
+		tt := tc
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var err error
 			var recorder = pcap.NewRecorder()
 
@@ -219,14 +226,12 @@ func Test_pcapServer_StartPCAPFileRecording(t *testing.T) {
 			if currentSubs := recorder.Subscriptions(); !reflect.DeepEqual(currentSubs, tt.wantSubscriptions) {
 				t.Errorf("StartPCAPFileRecording() got = %v, want %v", currentSubs, tt.wantSubscriptions)
 			}
-		}
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, scenario(tt))
+		})
 	}
 }
 
 func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name             string
 		keyToRemove      string
@@ -239,6 +244,7 @@ func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
 			name:        "Remove non existing recording",
 			keyToRemove: "lo:asdf.pcap",
 			recorderSetup: func(t *testing.T) (recorder pcap.Recorder, err error) {
+				t.Helper()
 				recorder = pcap.NewRecorder()
 				return
 			},
@@ -249,6 +255,7 @@ func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
 			name:        "Remove an existing recording",
 			keyToRemove: "lo:test.pcap",
 			recorderSetup: func(t *testing.T) (recorder pcap.Recorder, err error) {
+				t.Helper()
 				recorder = pcap.NewRecorder()
 				err = recorder.StartRecording(context.Background(), "lo", consumers.NewNoOpConsumerWithName("test.pcap"))
 				return
@@ -257,8 +264,10 @@ func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
 			wantErr:          false,
 		},
 	}
-	scenario := func(tt testCase) func(t *testing.T) {
-		return func(t *testing.T) {
+	for _, tc := range tests {
+		tt := tc
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var err error
 			var recorder pcap.Recorder
 			if recorder, err = tt.recorderSetup(t); err != nil {
@@ -283,10 +292,7 @@ func Test_pcapServer_StopPCAPFileRecord(t *testing.T) {
 			if gotResp.Removed != tt.removedRecording {
 				t.Errorf("StopPCAPFileRecord() removed = %v, want %v", gotResp.Removed, tt.removedRecording)
 			}
-		}
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, scenario(tt))
+		})
 	}
 }
 

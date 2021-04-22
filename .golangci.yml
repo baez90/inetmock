@@ -75,11 +75,15 @@ linters:
     - lll
     - misspell
     - nakedret
+    - nestif
     - noctx
     - nolintlint
+    - paralleltest
+    - prealloc
     - staticcheck
     - structcheck
     - stylecheck
+    - thelper
     - typecheck
     - unconvert
     - unparam

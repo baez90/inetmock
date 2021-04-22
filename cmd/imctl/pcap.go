@@ -172,18 +172,18 @@ func runListActiveRecordings(*cobra.Command, []string) error {
 		return err
 	}
 
-	var out []printableSubscription
-	for _, subscription := range resp.Subscriptions {
+	var out = make([]printableSubscription, len(resp.Subscriptions))
+	for idx, subscription := range resp.Subscriptions {
 		splitIdx := strings.Index(subscription, ":")
 		if splitIdx < 0 {
 			continue
 		}
 
-		out = append(out, printableSubscription{
+		out[idx] = printableSubscription{
 			Name:        subscription[splitIdx:],
 			Device:      subscription[:splitIdx],
 			ConsumerKey: subscription,
-		})
+		}
 	}
 
 	writer := format.Writer(cfg.Format, os.Stdout)

@@ -6,6 +6,7 @@ import (
 )
 
 func Context(t *testing.T) context.Context {
+	t.Helper()
 	if deadline, ok := t.Deadline(); ok {
 		ctx, cancel := context.WithDeadline(context.Background(), deadline)
 		t.Cleanup(cancel)

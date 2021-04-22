@@ -125,9 +125,9 @@ func runListSinks(*cobra.Command, []string) (err error) {
 		Name string
 	}
 
-	var sinks []printableSink
-	for _, s := range resp.Sinks {
-		sinks = append(sinks, printableSink{Name: s})
+	var sinks = make([]printableSink, len(resp.Sinks))
+	for i, s := range resp.Sinks {
+		sinks[i] = printableSink{Name: s}
 	}
 
 	writer := format.Writer(cfg.Format, os.Stdout)

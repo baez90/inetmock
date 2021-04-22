@@ -44,14 +44,15 @@ func fromComponentsHealth(componentsHealth map[string]*rpcV1.ComponentHealth) in
 		Message   string
 	}
 
-	var componentsInfo []printableHealthInfo
-
+	var componentsInfo = make([]printableHealthInfo, len(componentsHealth))
+	var idx int
 	for componentName, component := range componentsHealth {
-		componentsInfo = append(componentsInfo, printableHealthInfo{
+		componentsInfo[idx] = printableHealthInfo{
 			Component: componentName,
 			State:     component.State.String(),
 			Message:   component.Message,
-		})
+		}
+		idx++
 	}
 	return componentsInfo
 }

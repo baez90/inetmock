@@ -22,6 +22,7 @@ type GRPCServer struct {
 }
 
 func NewTestGRPCServer(tb testing.TB, registrations ...APIRegistration) (srv *GRPCServer) {
+	tb.Helper()
 	srv = &GRPCServer{
 		listener: bufconn.Listen(bufconnBufferSize),
 		server:   grpc.NewServer(),
@@ -39,6 +40,7 @@ func NewTestGRPCServer(tb testing.TB, registrations ...APIRegistration) (srv *GR
 }
 
 func (t *GRPCServer) Dial(ctx context.Context, tb testing.TB, opts ...grpc.DialOption) *grpc.ClientConn {
+	tb.Helper()
 	opts = append(opts, grpc.WithInsecure(), grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return t.listener.Dial()
 	}))
@@ -55,6 +57,7 @@ func (t *GRPCServer) Dial(ctx context.Context, tb testing.TB, opts ...grpc.DialO
 }
 
 func (t *GRPCServer) startServerLifecycle(ctx context.Context, tb testing.TB) {
+	tb.Helper()
 	go func() {
 		<-ctx.Done()
 		t.server.Stop()

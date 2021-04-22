@@ -24,6 +24,7 @@ const (
 )
 
 func Test_auditServer_RemoveFileSink(t *testing.T) {
+	t.Parallel()
 	type fields struct {
 		eventStreamSetup func(t *testing.T) audit.EventStream
 	}
@@ -41,6 +42,7 @@ func Test_auditServer_RemoveFileSink(t *testing.T) {
 			},
 			fields: fields{
 				eventStreamSetup: func(t *testing.T) audit.EventStream {
+					t.Helper()
 					ctrl := gomock.NewController(t)
 
 					es := auditm.NewMockEventStream(ctrl)
@@ -64,6 +66,7 @@ func Test_auditServer_RemoveFileSink(t *testing.T) {
 			},
 			fields: fields{
 				eventStreamSetup: func(t *testing.T) audit.EventStream {
+					t.Helper()
 					ctrl := gomock.NewController(t)
 
 					es := auditm.NewMockEventStream(ctrl)
@@ -78,8 +81,10 @@ func Test_auditServer_RemoveFileSink(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
+	for _, tc := range tests {
+		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			testCtx := tst.Context(t)
 			logger := logging.CreateTestLogger(t)
 
