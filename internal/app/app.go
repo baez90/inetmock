@@ -162,7 +162,7 @@ func (s Spec) readConfig(rootCmd *cobra.Command) error {
 	viperCfg.AddConfigPath(fmt.Sprintf("$HOME/.%s/", strings.ToLower(s.Name)))
 	viperCfg.AddConfigPath(".")
 	viperCfg.SetEnvPrefix("INETMOCK")
-	viperCfg.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viperCfg.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viperCfg.AutomaticEnv()
 
 	if s.FlagBindings != nil {

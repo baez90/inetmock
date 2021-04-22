@@ -9,7 +9,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.2.0
 	github.com/imdario/mergo v0.3.12
-	github.com/jinzhu/copier v0.2.8
+	github.com/jinzhu/copier v0.2.9
 	github.com/maxatome/go-testdeep v1.9.2
 	github.com/miekg/dns v1.1.41
 	github.com/mitchellh/mapstructure v1.4.1
@@ -22,7 +22,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.10.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	google.golang.org/grpc v1.36.1
+	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/elazarl/goproxy.v1 v1.0.0-20180725130230-947c36da3153
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

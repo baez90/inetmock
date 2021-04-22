@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -83,9 +84,15 @@ func main() {
 			Config:      &cfg,
 			SubCommands: []*cobra.Command{serveCmd, generateCaCmd},
 			Defaults: map[string]interface{}{
-				"api.listen": "tcp://:0",
-				"data.pcap":  "/var/lib/inetmock/data/pcap",
-				"data.audit": "/var/lib/inetmock/data/audit",
+				"api.listen":                            "tcp://:0",
+				"data.pcap":                             "/var/lib/inetmock/data/pcap",
+				"data.audit":                            "/var/lib/inetmock/data/audit",
+				"tls.curve":                             cert.CurveTypeP256,
+				"tls.minTLSVersion":                     cert.TLSVersionTLS10,
+				"tls.includeInsecureCipherSuites":       false,
+				"tls.validity.server.notBeforeRelative": 168 * time.Hour,
+				"tls.validity.server.notAfterRelative":  168 * time.Hour,
+				"tls.certCachePath":                     "/tmp",
 			},
 		},
 	)
