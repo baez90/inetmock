@@ -2,6 +2,8 @@ image: registry.gitlab.com/inetmock/ci-image/go
 
 include:
   - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
 
 stages:
   - test
@@ -14,6 +16,7 @@ variables:
   DOCKER_CERT_PATH: "/certs/client"
   DOCKER_TLS_VERIFY: 1
   DOCKER_HOST: 'tcp://docker:2376'
+  SAST_EXCLUDED_ANALYZERS: "eslint"
 
 
 test:
