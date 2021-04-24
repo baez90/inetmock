@@ -34,6 +34,15 @@ tasks:
     cmds:
       - go mod download
 
+  dep-graph:
+    desc: generate dependency graph
+    sources:
+      - go.mod
+      - go.sum
+    cmds:
+      - mkdir -p {{ .OUT_DIR }}
+      - gomod graph "**" | dot -Gdpi=0 -T svg -o {{ .OUT_DIR }}/dependency_graph.svg
+
   golangci-lint:
     desc: run Go linter
     deps:

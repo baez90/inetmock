@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/docker/go-connections v0.4.0
+	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
 	github.com/golang/mock v1.5.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.2.0
@@ -24,6 +25,5 @@ require (
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
-	gopkg.in/elazarl/goproxy.v1 v1.0.0-20180725130230-947c36da3153
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
