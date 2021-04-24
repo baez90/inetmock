@@ -1,5 +1,8 @@
 image: registry.gitlab.com/inetmock/ci-image/go
 
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
 stages:
   - test
   - build
